@@ -16,6 +16,7 @@
 package com.google.idea.blaze.android.sync.importer;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 import static com.intellij.testFramework.UsefulTestCase.assertSameElements;
 
 import com.google.common.collect.ImmutableCollection;
@@ -1933,6 +1934,137 @@ public class BlazeAndroidWorkspaceImporterTest extends BlazeTestCase {
     assertThat(mockBlazeAndroidWorkspaceImporter.getCreateCount()).isEqualTo(5);
     // One reduce per direct dependency: 3 + 1 + 1 + 0 + 1
     assertThat(mockBlazeAndroidWorkspaceImporter.getReduce()).isEqualTo(6);
+  }
+
+  @Test
+  public void testAndroidResourceImport_aarUsesExportedPackageName() {
+    experimentService.setFeatureRolloutExperiment(AarLibrary.exportResourcePackage, 100);
+    ProjectView projectView =
+        ProjectView.builder()
+            .add(
+                ListSection.builder(DirectorySection.KEY)
+                    .add(DirectoryEntry.include(new WorkspacePath("java/example"))))
+            .build();
+
+    TargetMapBuilder targetMapBuilder =
+        TargetMapBuilder.builder()
+            .addTarget(
+                TargetIdeInfo.builder()
+                    .setLabel("//java/com/google/android/assets/quantum:values")
+                    .setBuildFile(source("java/com/google/android/assets/quantum/BUILD"))
+                    .setKind("android_library")
+                    .setAndroidInfo(
+                        AndroidIdeInfo.builder()
+                            .setResourceJavaPackage("dino.google.android.assets.quantum")
+                            .setGenerateResourceClass(true)
+                            .setManifestFile(
+                                source(
+                                    "java/com/google/android/assets/quantum/AndroidManifest.xml"))
+                            .addResource(
+                                AndroidResFolder.builder()
+                                    .setRoot(source("java/com/google/android/assets/quantum/res"))
+                                    .setAar(
+                                        source(
+                                            "java/com/google/android/assets/quantum/resources.aar"))
+                                    .build()))
+                    .build())
+            .addTarget(
+                TargetIdeInfo.builder()
+                    .setLabel("//java/example:resources")
+                    .setBuildFile(source("java/example/BUILD"))
+                    .setKind("android_library")
+                    .setAndroidInfo(
+                        AndroidIdeInfo.builder()
+                            .setManifestFile(source("java/example/AndroidManifest.xml"))
+                            .addResource(source("java/example/res"))
+                            .setGenerateResourceClass(true)
+                            .setResourceJavaPackage("com.google.android.example"))
+                    .addDependency("//java/com/google/android/assets/quantum:values")
+                    .build());
+
+    BlazeAndroidImportResult result = importWorkspace(workspaceRoot, targetMapBuilder, projectView);
+    errorCollector.assertNoIssues();
+    assertThat(result.androidResourceModules)
+        .containsExactly(
+            AndroidResourceModule.builder(
+                    TargetKey.forPlainTarget(Label.create("//java/example:resources")))
+                .addResourceAndTransitiveResource(source("java/example/res"))
+                .addTransitiveResourceDependency("//java/com/google/android/assets/quantum:values")
+                .addResourceLibraryKey(
+                    LibraryKey.libraryNameFromArtifactLocation(
+                        source("java/com/google/android/assets/quantum/resources.aar")))
+                .build());
+    assertThat(result.aarLibraries.values())
+        .containsExactly(
+            new AarLibrary(source("java/com/google/android/assets/quantum/resources.aar")));
+
+    assertThat(result.aarLibraries.values().stream().map(a -> a.resourcePackage))
+        .containsExactly("dino.google.android.assets.quantum");
+  }
+
+  @Test
+  public void testAndroidResourceImport_aarInfersPackageName() {
+    experimentService.setFeatureRolloutExperiment(AarLibrary.exportResourcePackage, 100);
+    ProjectView projectView =
+        ProjectView.builder()
+            .add(
+                ListSection.builder(DirectorySection.KEY)
+                    .add(DirectoryEntry.include(new WorkspacePath("java/example"))))
+            .build();
+
+    TargetMapBuilder targetMapBuilder =
+        TargetMapBuilder.builder()
+            .addTarget(
+                TargetIdeInfo.builder()
+                    .setLabel("//java/com/google/android/assets/quantum:values")
+                    .setBuildFile(source("java/com/google/android/assets/quantum/BUILD"))
+                    .setKind("android_library")
+                    .setAndroidInfo(
+                        AndroidIdeInfo.builder()
+                            .setGenerateResourceClass(true)
+                            .setManifestFile(
+                                source(
+                                    "java/com/google/android/assets/quantum/AndroidManifest.xml"))
+                            .addResource(
+                                AndroidResFolder.builder()
+                                    .setRoot(source("java/com/google/android/assets/quantum/res"))
+                                    .setAar(
+                                        source(
+                                            "java/com/google/android/assets/quantum/resources.aar"))
+                                    .build()))
+                    .build())
+            .addTarget(
+                TargetIdeInfo.builder()
+                    .setLabel("//java/example:resources")
+                    .setBuildFile(source("java/example/BUILD"))
+                    .setKind("android_library")
+                    .setAndroidInfo(
+                        AndroidIdeInfo.builder()
+                            .setManifestFile(source("java/example/AndroidManifest.xml"))
+                            .addResource(source("java/example/res"))
+                            .setGenerateResourceClass(true)
+                            .setResourceJavaPackage("com.google.android.example"))
+                    .addDependency("//java/com/google/android/assets/quantum:values")
+                    .build());
+
+    BlazeAndroidImportResult result = importWorkspace(workspaceRoot, targetMapBuilder, projectView);
+    errorCollector.assertNoIssues();
+    assertThat(result.androidResourceModules)
+        .containsExactly(
+            AndroidResourceModule.builder(
+                    TargetKey.forPlainTarget(Label.create("//java/example:resources")))
+                .addResourceAndTransitiveResource(source("java/example/res"))
+                .addTransitiveResourceDependency("//java/com/google/android/assets/quantum:values")
+                .addResourceLibraryKey(
+                    LibraryKey.libraryNameFromArtifactLocation(
+                        source("java/com/google/android/assets/quantum/resources.aar")))
+                .build());
+    assertThat(result.aarLibraries.values())
+        .containsExactly(
+            new AarLibrary(source("java/com/google/android/assets/quantum/resources.aar")));
+
+    assertThat(result.aarLibraries.values().stream().map(a -> a.resourcePackage))
+        .containsExactly("com.google.android.assets.quantum");
   }
 
   /**
