@@ -124,6 +124,8 @@ public class BlazeIntellijPluginConfigurationType implements ConfigurationType {
     }
 
     @Override
+    @SuppressWarnings(
+        "rawtypes") // Super method uses raw BeforeRunTask. Check super method again after #api202.
     public void configureBeforeRunTaskDefaults(
         Key<? extends BeforeRunTask> providerID, BeforeRunTask task) {
       task.setEnabled(providerID.equals(BuildPluginBeforeRunTaskProvider.ID));

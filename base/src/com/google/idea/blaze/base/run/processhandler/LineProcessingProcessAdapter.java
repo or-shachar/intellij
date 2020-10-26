@@ -32,6 +32,8 @@ public final class LineProcessingProcessAdapter extends ProcessAdapter {
   }
 
   @Override
+  @SuppressWarnings(
+      "rawtypes") // Super method uses raw Key. Check super method again after #api202.
   public void onTextAvailable(ProcessEvent event, Key outputType) {
     String text = event.getText();
     if (text != null) {

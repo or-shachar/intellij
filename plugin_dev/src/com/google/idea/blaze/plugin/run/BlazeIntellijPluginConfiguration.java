@@ -414,6 +414,8 @@ public class BlazeIntellijPluginConfiguration extends LocatableConfigurationBase
       targetCombo.setRenderer(
           new ListCellRendererWrapper<Label>() {
             @Override
+            @SuppressWarnings(
+                "rawtypes") // Super method uses raw class. Check super method again after #api202.
             public void customize(
                 JList list, @Nullable Label value, int index, boolean selected, boolean hasFocus) {
               setText(value == null ? null : value.toString());
