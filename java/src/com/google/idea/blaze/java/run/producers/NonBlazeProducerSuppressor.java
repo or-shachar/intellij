@@ -95,6 +95,7 @@ public class NonBlazeProducerSuppressor implements ProjectComponent {
         .collect(Collectors.toList());
   }
 
+  @SuppressWarnings("unchecked") // Instanceof check is right before cast.
   @Nullable
   private static Class<RunConfigurationProducer<?>> loadClass(
       ClassLoader loader, String qualifiedName) {
