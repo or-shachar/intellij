@@ -184,7 +184,7 @@ public class ProjectViewUi {
   private void setProjectViewText(String projectViewText) {
     new WriteAction() {
       @Override
-      protected void run(@NotNull Result result) throws Throwable {
+      protected void run(@NotNull Result result) {
         projectViewEditor.getDocument().setReadOnly(false);
         projectViewEditor.getDocument().setText(projectViewText);
       }
