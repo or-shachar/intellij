@@ -45,6 +45,11 @@ java_import(
     ],
 )
 
+filegroup(
+    name = "layoutlib_data",
+    srcs = [],
+)
+
 java_import(
     name = "test_recorder",
     jars = glob([
